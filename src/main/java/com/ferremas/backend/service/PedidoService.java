@@ -118,15 +118,20 @@ public class PedidoService {
     }
 
     public Pedido rechazarPedido(Long pedidoId) {
-        Pedido pedido = pedidoRepository.findById(pedidoId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pedido no encontrado"));
+    Pedido pedido = pedidoRepository.findById(pedidoId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pedido no encontrado"));
 
-        if (!pedido.getEstado().equalsIgnoreCase("DESPACHADO")) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se puede rechazar un pedido ya despachado");
-        }
+    if (pedido.getEstado().equalsIgnoreCase("DESPACHADO")) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se puede rechazar un pedido ya despachado");
+    }
 
-        pedido.setEstado("RECHAZADO");
-        return pedidoRepository.save(pedido);
+    if (pedido.getEstado().equalsIgnoreCase("RECHAZADO")) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El pedido ya está rechazado");
+    }
+
+    pedido.setEstado("RECHAZADO");
+    return pedidoRepository.save(pedido);
+    
     }
 
     public Pedido prepararPedido(Long pedidoId) {
