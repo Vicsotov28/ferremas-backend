@@ -3,6 +3,7 @@ package com.ferremas.backend.config;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import com.ferremas.backend.model.Producto;
 import com.ferremas.backend.model.Usuario;
@@ -15,7 +16,8 @@ public class DataLoader {
     @Bean
     CommandLineRunner initDatabase(
             ProductoRepository productoRepository,
-            UsuarioRepository usuarioRepository) {
+            UsuarioRepository usuarioRepository,
+            BCryptPasswordEncoder passwordEncoder) {
 
         return args -> {
 
@@ -76,7 +78,7 @@ public class DataLoader {
                         null,
                         "Cliente Demo",
                         "cliente@ferremas.cl",
-                        "1234",
+                        passwordEncoder.encode("1234"),
                         "CLIENTE"
                 ));
 
@@ -84,7 +86,7 @@ public class DataLoader {
                         null,
                         "Vendedor Demo",
                         "vendedor@ferremas.cl",
-                        "1234",
+                        passwordEncoder.encode("1234"),
                         "VENDEDOR"
                 ));
 
@@ -92,7 +94,7 @@ public class DataLoader {
                         null,
                         "Bodeguero Demo",
                         "bodeguero@ferremas.cl",
-                        "1234",
+                        passwordEncoder.encode("1234"),
                         "BODEGUERO"
                 ));
 
@@ -100,7 +102,7 @@ public class DataLoader {
                         null,
                         "Contador Demo",
                         "contador@ferremas.cl",
-                        "1234",
+                        passwordEncoder.encode("1234"),
                         "CONTADOR"
                 ));
 
@@ -108,7 +110,7 @@ public class DataLoader {
                         null,
                         "Administrador Demo",
                         "admin@ferremas.cl",
-                        "1234",
+                        passwordEncoder.encode("1234"),
                         "ADMINISTRADOR"
                 ));
             }
