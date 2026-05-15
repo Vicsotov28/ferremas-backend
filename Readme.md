@@ -1,24 +1,25 @@
-# FERREMAS Backend API
+# FERREMAS Backend
 
-Backend desarrollado para la Evaluación 2 del ramo **Integración de Plataformas (ASY5131)**.
+Backend desarrollado para el proyecto **FERREMAS**, correspondiente a la evaluación de Integración de Plataformas.
 
-El proyecto corresponde a una **API REST** para la empresa **FERREMAS**, orientada a la gestión de productos, usuarios, pedidos, estados de pedidos, pagos simulados e integración pública de productos para sistemas externos.
-
----
-
-## Integrantes
-
-- Fernando Ronda
-- Benjamín Lackington
-- Vicente Soto
+El sistema implementa una API REST para gestionar productos, usuarios, pedidos, pagos, suscripciones, conversión de divisas e integración con servicios externos.
 
 ---
 
-## Contexto del proyecto
+## Descripción del proyecto
 
-FERREMAS es una distribuidora de productos de ferretería y construcción que requiere modernizar su operación mediante una plataforma de comercio electrónico.
+FERREMAS es una distribuidora de productos de ferretería y construcción que requiere una solución de comercio electrónico para digitalizar su proceso de ventas, permitir compras en línea y mejorar la gestión de pedidos entre clientes, vendedores, bodegueros y contadores.
 
-En esta segunda etapa del proyecto se construye el backend de la solución, aplicando una arquitectura por capas y exponiendo una API REST que permite integrar funcionalidades de catálogo, pedidos, usuarios y pagos.
+Este backend permite:
+
+- Consultar productos disponibles.
+- Registrar usuarios y controlar acceso por roles.
+- Crear pedidos asociados a clientes.
+- Gestionar estados del pedido.
+- Procesar pagos mediante transferencia o integración con Mercado Pago.
+- Consultar el valor del dólar mediante integración con Banco Central de Chile.
+- Registrar suscripciones de clientes.
+- Proteger contraseñas mediante BCrypt.
 
 ---
 
@@ -26,107 +27,61 @@ En esta segunda etapa del proyecto se construye el backend de la solución, apli
 
 - Java 17
 - Spring Boot 3.5.13
-- Maven
 - Spring Web
 - Spring Data JPA
 - H2 Database
+- Maven
 - Lombok
+- BCrypt
+- Mercado Pago SDK
+- API Banco Central de Chile
 - Postman
-- Visual Studio Code
+- Git y GitHub
 
 ---
 
-## Arquitectura del proyecto
+## Arquitectura utilizada
 
-El backend utiliza una arquitectura por capas, separando responsabilidades de la siguiente forma:
+El backend utiliza una arquitectura por capas:
 
 ```text
-controller   -> expone los endpoints REST
-service      -> contiene la lógica de negocio
-repository   -> accede a la base de datos
-model        -> define las entidades del sistema
-dto          -> define objetos de entrada y salida
-integration  -> simula integración con servicios externos
-config       -> carga datos iniciales
+Controller → Service → Repository → Model
 ```
 
-Estructura principal:
+### Capas principales
 
-```text
-src/main/java/com/ferremas/backend
-│
-├── config
-│   └── DataLoader.java
-│
-├── controller
-│   ├── ProductoController.java
-│   ├── ProductoApiController.java
-│   ├── PedidoController.java
-│   └── UsuarioController.java
-│
-├── dto
-│   ├── LoginResponse.java
-│   ├── PedidoRequest.java
-│   └── PagoRequest.java
-│
-├── integration
-│   └── WebpayService.java
-│
-├── model
-│   ├── Producto.java
-│   ├── Pedido.java
-│   └── Usuario.java
-│
-├── repository
-│   ├── ProductoRepository.java
-│   ├── PedidoRepository.java
-│   └── UsuarioRepository.java
-│
-└── service
-    ├── ProductoService.java
-    ├── PedidoService.java
-    └── UsuarioService.java
-```
+- **Controller:** expone endpoints REST.
+- **Service:** contiene reglas de negocio y validaciones.
+- **Repository:** acceso a datos mediante Spring Data JPA.
+- **Model:** entidades del sistema.
+- **DTO:** objetos para entrada y salida de datos.
+- **Config:** configuración inicial, carga de datos demo y seguridad.
 
 ---
 
-## Cómo ejecutar el proyecto
+## Funcionalidades principales
 
-### 1. Clonar el repositorio
+### Productos
 
-```bash
-git clone URL_DEL_REPOSITORIO
-```
+Permite gestionar y consultar productos de FERREMAS.
 
-### 2. Entrar a la carpeta del backend
+Cada producto contiene:
 
-```bash
-cd backend
-```
-
-### 3. Ejecutar el proyecto
-
-```bash
-mvn spring-boot:run
-```
-
-El backend se levantará en:
-
-```text
-http://localhost:8080
-```
+- Código de producto
+- Marca
+- Código de marca
+- Nombre
+- Modelo
+- Categoría
+- Descripción
+- Precio
+- Stock
 
 ---
 
-## Base de datos
+### Usuarios y roles
 
-El proyecto utiliza **H2 Database en memoria**, lo que permite probar el backend sin instalar una base de datos externa.
-
-Cada vez que se inicia la aplicación, el sistema carga datos iniciales mediante `DataLoader`, incluyendo productos y usuarios demo.
-
----
-
-## Usuarios demo
+El sistema cuenta con usuarios demo para probar el flujo completo.
 
 | Rol | Email | Contraseña |
 |---|---|---|
@@ -136,260 +91,324 @@ Cada vez que se inicia la aplicación, el sistema carga datos iniciales mediante
 | Contador | contador@ferremas.cl | 1234 |
 | Administrador | admin@ferremas.cl | 1234 |
 
----
+Roles implementados:
 
-## Módulo Productos
-
-Permite administrar productos de FERREMAS.
-
-### Endpoints
-
-| Método | Endpoint | Descripción |
-|---|---|---|
-| GET | `/productos` | Listar todos los productos |
-| GET | `/productos/{id}` | Buscar producto por ID |
-| POST | `/productos` | Crear producto |
-| PUT | `/productos/{id}` | Actualizar producto |
-| DELETE | `/productos/{id}` | Eliminar producto |
-
-### Ejemplo JSON para crear producto
-
-```json
-{
-  "codigoProducto": "FER-99999",
-  "marca": "Bosch",
-  "codigoMarca": "BOS-99999",
-  "nombre": "Atornillador Bosch",
-  "modelo": "GSR 120-LI",
-  "categoria": "Herramientas Eléctricas",
-  "descripcion": "Atornillador inalámbrico profesional",
-  "precio": 69990,
-  "stock": 20
-}
-```
+- CLIENTE
+- VENDEDOR
+- BODEGUERO
+- CONTADOR
+- ADMINISTRADOR
 
 ---
 
-## API pública de productos
+### Seguridad de contraseñas
 
-Esta API está pensada para integración con sucursales internas o sistemas externos.
+Las contraseñas se almacenan cifradas utilizando **BCrypt**.
 
-| Método | Endpoint | Descripción |
-|---|---|---|
-| GET | `/api/productos` | Listar productos disponibles |
-| GET | `/api/productos/{codigoProducto}` | Buscar producto por código FERREMAS |
-| GET | `/api/productos/marca/{marca}` | Buscar productos por marca |
+El login compara la contraseña ingresada por el usuario con la contraseña cifrada almacenada en base de datos mediante `passwordEncoder.matches()`.
 
-### Ejemplos
-
-```http
-GET http://localhost:8080/api/productos
-GET http://localhost:8080/api/productos/FER-12345
-GET http://localhost:8080/api/productos/marca/Bosch
-```
+Esto evita guardar contraseñas en texto plano.
 
 ---
 
-## Módulo Usuarios
+### Pedidos
 
-Permite registrar usuarios y realizar login básico.
+El sistema permite:
 
-| Método | Endpoint | Descripción |
-|---|---|---|
-| GET | `/usuarios` | Listar usuarios |
-| POST | `/usuarios/registro` | Registrar usuario |
-| POST | `/usuarios/login` | Iniciar sesión |
+- Crear pedidos asociados a un usuario cliente.
+- Validar stock disponible.
+- Seleccionar retiro en tienda o despacho a domicilio.
+- Asociar producto, cantidad, total, método de pago y cliente.
+- Controlar estados del pedido durante todo el flujo operacional.
 
-### Registro de usuario
-
-```json
-{
-  "nombre": "Cliente Prueba",
-  "email": "clienteprueba@ferremas.cl",
-  "password": "1234",
-  "rol": "CLIENTE"
-}
-```
-
-### Login
-
-```http
-POST http://localhost:8080/usuarios/login?email=cliente@ferremas.cl&password=1234
-```
-
-Respuesta esperada:
-
-```json
-{
-  "id": 1,
-  "nombre": "Cliente Demo",
-  "email": "cliente@ferremas.cl",
-  "rol": "CLIENTE"
-}
-```
-
-El login devuelve un DTO de respuesta, evitando exponer la contraseña del usuario.
-
----
-
-## Módulo Pedidos
-
-Permite crear pedidos, validar stock, descontar productos y gestionar estados operativos.
-
-| Método | Endpoint | Descripción |
-|---|---|---|
-| GET | `/pedidos` | Listar pedidos |
-| GET | `/pedidos/{id}` | Buscar pedido por ID |
-| POST | `/pedidos` | Crear pedido |
-| PUT | `/pedidos/pagar` | Procesar pago |
-| PUT | `/pedidos/{id}/aprobar` | Aprobar pedido |
-| PUT | `/pedidos/{id}/rechazar` | Rechazar pedido |
-| PUT | `/pedidos/{id}/preparar` | Preparar pedido |
-| PUT | `/pedidos/{id}/listo-despacho` | Marcar pedido listo para despacho |
-| PUT | `/pedidos/{id}/despachar` | Despachar pedido |
-
-### Crear pedido con despacho
-
-```json
-{
-  "productoId": 1,
-  "cantidad": 2,
-  "tipoEntrega": "DESPACHO",
-  "direccion": "Santateresa407"
-}
-```
-
-### Crear pedido con retiro
-
-```json
-{
-  "productoId": 2,
-  "cantidad": 1,
-  "tipoEntrega": "RETIRO"
-}
-```
-
----
-
-## Pago simulado / integración Webpay
-
-El proyecto incluye una capa de integración llamada `WebpayService`, la cual simula el procesamiento de pagos con tarjeta, débito o crédito.
-
-Esta implementación permite mantener separada la lógica de pedidos de la lógica de pago, dejando preparado el backend para una futura integración real con Webpay.
-
-### Procesar pago
-
-```http
-PUT http://localhost:8080/pedidos/pagar
-```
-
-Body:
-
-```json
-{
-  "pedidoId": 1,
-  "metodoPago": "TARJETA"
-}
-```
-
-Métodos aceptados:
+Estados utilizados:
 
 ```text
-TARJETA
-DEBITO
-CREDITO
-TRANSFERENCIA
-```
-
-Los métodos `TARJETA`, `DEBITO` y `CREDITO` se procesan mediante `WebpayService` simulado.
-
-El método `TRANSFERENCIA` se considera como pago validado internamente.
-
----
-
-## Flujo de estados del pedido
-
-El pedido sigue el siguiente flujo operativo:
-
-```text
-PENDIENTE -> PAGADO -> APROBADO -> EN_PREPARACION -> LISTO_DESPACHO -> DESPACHADO
-```
-
-También puede quedar como:
-
-```text
+PENDIENTE
+PAGADO
+APROBADO
+EN_PREPARACION
+LISTO_DESPACHO
+DESPACHADO
 RECHAZADO
 ```
 
 ---
 
-## Pruebas con Postman
-
-Se creó una colección en Postman llamada:
+### Flujo operacional del pedido
 
 ```text
-FERREMAS Backend API
-```
-
-La colección contiene pruebas para:
-
-- Usuarios
-- Productos
-- Pedidos
-- Pagos
-- Estados del pedido
-- API pública de productos
-
-### Flujo recomendado para demostración
-
-```text
-1. GET /api/productos
-2. POST /usuarios/login
-3. POST /pedidos
-4. PUT /pedidos/pagar
-5. PUT /pedidos/{id}/aprobar
-6. PUT /pedidos/{id}/preparar
-7. PUT /pedidos/{id}/listo-despacho
-8. PUT /pedidos/{id}/despachar
-9. GET /pedidos/{id}
+Cliente crea pedido
+        ↓
+Cliente paga
+        ↓
+Vendedor aprueba o rechaza
+        ↓
+Bodeguero prepara pedido
+        ↓
+Bodeguero marca pedido listo
+        ↓
+Contador registra entrega final
 ```
 
 ---
 
-## Funcionalidades implementadas
+### Pagos
 
-- Gestión de productos.
-- Consulta pública de productos para integración externa.
-- Registro de usuarios.
-- Login básico con respuesta DTO.
-- Roles de usuario.
+El backend permite:
+
+- Pago por transferencia bancaria.
+- Integración con Mercado Pago Checkout Pro.
+- Creación de preferencia de pago.
+- Simulación de pago con tarjetas de prueba.
+- Registro del método de pago en el pedido.
+
+---
+
+### Conversión de divisas
+
+El backend consume la API del Banco Central de Chile para consultar el valor del dólar observado.
+
+Esto permite que el frontend muestre el precio del producto en pesos chilenos y también una referencia aproximada en dólares.
+
+---
+
+### Suscripciones
+
+Permite registrar correos de clientes para recibir ofertas, noticias y descuentos.
+
+El endpoint valida:
+
+- Correo vacío.
+- Formato básico del correo.
+- Correos duplicados.
+
+---
+
+## Endpoints principales
+
+### Productos
+
+```http
+GET /api/productos
+GET /api/productos/{codigoProducto}
+GET /api/productos/marca/{marca}
+
+GET /productos
+POST /productos
+PUT /productos/{id}
+DELETE /productos/{id}
+```
+
+---
+
+### Usuarios
+
+```http
+GET /usuarios
+POST /usuarios/registro
+POST /usuarios/login?email={email}&password={password}
+```
+
+---
+
+### Pedidos
+
+```http
+GET /pedidos
+GET /pedidos/{id}
+POST /pedidos
+PUT /pedidos/pagar
+PUT /pedidos/{id}/aprobar
+PUT /pedidos/{id}/rechazar
+PUT /pedidos/{id}/preparar
+PUT /pedidos/{id}/listo-despacho
+PUT /pedidos/{id}/despachar
+```
+
+---
+
+### Divisas
+
+```http
+GET /api/divisas/dolar
+```
+
+---
+
+### Mercado Pago
+
+```http
+POST /api/pagos/mercadopago/preferencia
+```
+
+---
+
+### Suscripciones
+
+```http
+POST /api/suscripciones
+```
+
+---
+
+## Ejemplo de creación de pedido
+
+```json
+{
+  "productoId": 1,
+  "usuarioId": 1,
+  "cantidad": 1,
+  "tipoEntrega": "RETIRO",
+  "direccion": ""
+}
+```
+
+---
+
+## Ejemplo de pago por transferencia
+
+```json
+{
+  "pedidoId": 1,
+  "metodoPago": "TRANSFERENCIA"
+}
+```
+
+---
+
+## Ejemplo de preferencia Mercado Pago
+
+```json
+{
+  "pedidoId": 1,
+  "titulo": "Taladro Percutor Bosch",
+  "cantidad": 1,
+  "precioUnitario": 89090
+}
+```
+
+---
+
+## Variables de entorno
+
+Este proyecto utiliza variables de entorno para proteger credenciales externas.
+
+```properties
+BCENTRAL_USER=usuario_banco_central
+BCENTRAL_PASS=password_banco_central
+MP_ACCESS_TOKEN=access_token_mercado_pago
+```
+
+En `application.properties` se utilizan así:
+
+```properties
+server.port=${PORT:8080}
+
+bcentral.user=${BCENTRAL_USER:}
+bcentral.pass=${BCENTRAL_PASS:}
+bcentral.serie.dolar=F073.TCO.PRE.Z.D
+
+mercadopago.access.token=${MP_ACCESS_TOKEN:}
+
+server.error.include-message=always
+```
+
+> Importante: no se deben subir credenciales reales a GitHub.
+
+---
+
+## Cómo ejecutar el backend
+
+Desde PowerShell:
+
+```powershell
+cd C:\Users\Moonlab\OneDrive\Escritorio\backend
+
+$env:BCENTRAL_USER="TU_USUARIO_BANCO_CENTRAL"
+$env:BCENTRAL_PASS="TU_PASSWORD_BANCO_CENTRAL"
+$env:MP_ACCESS_TOKEN="TU_ACCESS_TOKEN_MERCADO_PAGO"
+
+.\mvnw.cmd spring-boot:run
+```
+
+El backend queda disponible en:
+
+```text
+http://localhost:8080
+```
+
+---
+
+## Base de datos
+
+El proyecto utiliza **H2 en memoria** para facilitar la ejecución y presentación.
+
+Cada vez que se reinicia el backend, se cargan datos iniciales mediante `DataLoader`.
+
+Incluye:
+
+- 4 productos demo.
+- 5 usuarios demo.
+- Contraseñas cifradas con BCrypt.
+
+---
+
+## Pruebas realizadas
+
+Se realizaron pruebas funcionales con Postman y desde el frontend para validar:
+
+- Consulta de productos.
+- Login por roles.
+- Registro de suscripciones.
 - Creación de pedidos.
 - Validación de stock.
-- Descuento automático de stock.
-- Selección de tipo de entrega.
-- Validación de dirección para despacho.
-- Pago simulado.
-- Estados operativos del pedido.
-- Carga automática de datos iniciales.
-- Arquitectura por capas.
+- Pago por transferencia.
+- Creación de preferencia de pago con Mercado Pago.
+- Flujo de aprobación por vendedor.
+- Preparación por bodeguero.
+- Registro de entrega por contador.
+- Consulta de dólar desde Banco Central.
 
 ---
 
-## Repositorios del proyecto
+## Evidencias recomendadas para presentación
 
-Según las instrucciones de la evaluación, el sistema se divide en dos repositorios:
-
-```text
-ferremas-backend  -> API REST desarrollada en Spring Boot
-ferremas-frontend -> interfaz web del comercio electrónico
-```
-
-Este repositorio corresponde al backend de la solución.
+- Captura de productos desde `GET /api/productos`.
+- Captura de login funcionando.
+- Captura de creación de pedido.
+- Captura de pago por transferencia.
+- Captura de preferencia generada en Mercado Pago.
+- Captura de valor dólar desde Banco Central.
+- Captura de panel vendedor, bodeguero y contador.
+- Captura de compilación exitosa con Maven.
 
 ---
 
-## Observaciones
+## Mejoras futuras
 
-La integración con Webpay se encuentra actualmente simulada mediante `WebpayService`.
+- Implementar JWT para autenticación segura.
+- Agregar Spring Security completo con autorización por roles.
+- Persistir datos en MySQL o PostgreSQL.
+- Implementar Webhooks de Mercado Pago para confirmar pagos automáticamente.
+- Agregar Swagger/OpenAPI para documentación interactiva.
+- Agregar pruebas unitarias con JUnit y Mockito.
+- Agregar pruebas de integración para endpoints REST.
+- Agregar pipeline CI/CD con GitHub Actions.
+- Mejorar manejo global de errores.
+- Implementar pedidos con múltiples productos.
+- Agregar historial de pedidos por cliente.
+- Agregar reportes financieros para administrador y contador.
+- Desplegar backend en Render, Railway u otro servicio cloud.
 
-La arquitectura queda preparada para reemplazar esta simulación por la API real de Webpay en una etapa posterior del desarrollo.
+---
+
+## Autores
+
+Proyecto desarrollado por:
+
+**Vicente Soto**  
+**Fernando Ronda**  
+**Benjamin Lackington**  
+Ingeniería en Informática  
+Duoc UC
