@@ -32,12 +32,12 @@ public class PedidoController {
     public Pedido crearPedido(@RequestBody PedidoRequest request) {
     return pedidoService.crearPedido(
             request.getProductoId(),
+            request.getUsuarioId(),
             request.getCantidad(),
             request.getTipoEntrega(),
             request.getDireccion()
     );
 }
-
     @PutMapping("/pagar")
     public Pedido pagarPedido(@RequestBody PagoRequest request) {
     return pedidoService.procesarPago(

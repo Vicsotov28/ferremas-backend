@@ -4,16 +4,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
-import com.ferremas.backend.integration.WebpayService;
 
-import com.ferremas.backend.model.*;
-import com.ferremas.backend.repository.*;
+import com.ferremas.backend.integration.WebpayService;
+import com.ferremas.backend.model.Pedido;
+import com.ferremas.backend.model.Producto;
+import com.ferremas.backend.model.Usuario;
+import com.ferremas.backend.repository.PedidoRepository;
+import com.ferremas.backend.repository.ProductoRepository;
+import com.ferremas.backend.repository.UsuarioRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 public class PedidoService {
+
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     @Autowired
     private PedidoRepository pedidoRepository;
@@ -33,10 +40,24 @@ public class PedidoService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pedido no encontrado"));
     }
 
-    public Pedido crearPedido(Long productoId, int cantidad, String tipoEntrega, String direccion) {
+    public Pedido crearPedido(Long productoId, Long usuarioId, int cantidad, String tipoEntrega, String direccion) {
+        if (productoId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Debe seleccionar un producto");
+        }
+
+        if (usuarioId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Debe iniciar sesión para crear un pedido");
+        }
 
         Producto producto = productoRepository.findById(productoId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Producto no encontrado"));
+
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+
+        if (!usuario.getRol().equalsIgnoreCase("CLIENTE")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Solo un usuario CLIENTE puede crear pedidos");
+        }
 
         if (cantidad <= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La cantidad debe ser mayor a 0");
@@ -46,8 +67,8 @@ public class PedidoService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Stock insuficiente");
         }
 
-        if (tipoEntrega == null || 
-            (!tipoEntrega.equalsIgnoreCase("RETIRO") && !tipoEntrega.equalsIgnoreCase("DESPACHO"))) {
+        if (tipoEntrega == null ||
+                (!tipoEntrega.equalsIgnoreCase("RETIRO") && !tipoEntrega.equalsIgnoreCase("DESPACHO"))) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tipo de entrega inválido");
         }
 
@@ -61,6 +82,7 @@ public class PedidoService {
         Pedido pedido = new Pedido();
         pedido.setFecha(LocalDateTime.now());
         pedido.setProducto(producto);
+        pedido.setUsuario(usuario);
         pedido.setCantidad(cantidad);
         pedido.setTotal(producto.getPrecio() * cantidad);
         pedido.setEstado("PENDIENTE");
@@ -71,39 +93,36 @@ public class PedidoService {
         return pedidoRepository.save(pedido);
     }
 
-   public Pedido procesarPago(Long pedidoId, String metodoPago) {
+    public Pedido procesarPago(Long pedidoId, String metodoPago) {
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pedido no encontrado"));
 
-    Pedido pedido = pedidoRepository.findById(pedidoId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pedido no encontrado"));
+        if (!pedido.getEstado().equalsIgnoreCase("PENDIENTE")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El pedido ya ha sido procesado");
+        }
 
-    if (!pedido.getEstado().equalsIgnoreCase("PENDIENTE")) {
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El pedido ya ha sido procesado");
-    }
+        if (metodoPago == null || metodoPago.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Debe ingresar un método de pago");
+        }
 
-    if (metodoPago == null || metodoPago.isBlank()) {
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Debe ingresar un método de pago");
-    }
+        if (metodoPago.equalsIgnoreCase("TRANSFERENCIA")) {
+            pedido.setEstado("PAGADO");
+            pedido.setMetodoPago("TRANSFERENCIA");
+            return pedidoRepository.save(pedido);
+        }
 
-    // Transferencia se valida como pago interno/manual por contador
-    if (metodoPago.equalsIgnoreCase("TRANSFERENCIA")) {
-        pedido.setEstado("PAGADO");
-        pedido.setMetodoPago("TRANSFERENCIA");
+        boolean pagoAprobado = webpayService.procesarPago(pedido.getTotal(), metodoPago);
+
+        if (pagoAprobado) {
+            pedido.setEstado("PAGADO");
+            pedido.setMetodoPago(metodoPago.toUpperCase());
+        } else {
+            pedido.setEstado("RECHAZADO");
+            pedido.setMetodoPago(metodoPago.toUpperCase());
+        }
+
         return pedidoRepository.save(pedido);
     }
-
-    // Tarjeta / débito / crédito pasan por integración Webpay simulada
-    boolean pagoAprobado = webpayService.procesarPago(pedido.getTotal(), metodoPago);
-
-    if (pagoAprobado) {
-        pedido.setEstado("PAGADO");
-        pedido.setMetodoPago(metodoPago.toUpperCase());
-    } else {
-        pedido.setEstado("RECHAZADO");
-        pedido.setMetodoPago(metodoPago.toUpperCase());
-    }
-
-    return pedidoRepository.save(pedido);
-}
 
     public Pedido aprobarPedido(Long pedidoId) {
         Pedido pedido = pedidoRepository.findById(pedidoId)
@@ -118,20 +137,19 @@ public class PedidoService {
     }
 
     public Pedido rechazarPedido(Long pedidoId) {
-    Pedido pedido = pedidoRepository.findById(pedidoId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pedido no encontrado"));
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pedido no encontrado"));
 
-    if (pedido.getEstado().equalsIgnoreCase("DESPACHADO")) {
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se puede rechazar un pedido ya despachado");
-    }
+        if (pedido.getEstado().equalsIgnoreCase("DESPACHADO")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No se puede rechazar un pedido ya despachado");
+        }
 
-    if (pedido.getEstado().equalsIgnoreCase("RECHAZADO")) {
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El pedido ya está rechazado");
-    }
+        if (pedido.getEstado().equalsIgnoreCase("RECHAZADO")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El pedido ya está rechazado");
+        }
 
-    pedido.setEstado("RECHAZADO");
-    return pedidoRepository.save(pedido);
-    
+        pedido.setEstado("RECHAZADO");
+        return pedidoRepository.save(pedido);
     }
 
     public Pedido prepararPedido(Long pedidoId) {
@@ -157,7 +175,7 @@ public class PedidoService {
         pedido.setEstado("LISTO_DESPACHO");
         return pedidoRepository.save(pedido);
     }
-    
+
     public Pedido despacharPedido(Long pedidoId) {
         Pedido pedido = pedidoRepository.findById(pedidoId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pedido no encontrado"));
