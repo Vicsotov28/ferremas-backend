@@ -410,5 +410,6 @@ Proyecto desarrollado por:
 **Vicente Soto**  
 **Fernando Ronda**  
 **Benjamin Lackington**  
+
 Ingeniería en Informática  
 Duoc UC
